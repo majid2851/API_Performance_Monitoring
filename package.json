@@ -1,11 +1,15 @@
 {
-  "name": "cls",
-  "version": "1.0.0",
+  "name": "api-performance-monitoring",
+  "version": "1.0.4",
   "description": "",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
   "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/majid2851/API_Performance_Monitoring.git"
+  },
   "scripts": {
     "start": "node examples/server.js",
     "dev": "node --watch examples/server.js",
