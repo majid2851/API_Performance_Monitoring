@@ -1,14 +1,26 @@
 const Exporter = require('./base');
-const client = require('prom-client');
+
+let client = null;
+try {
+  client = require('prom-client');
+} catch (e) {
+  client = null;
+}
 
 class PrometheusExporter extends Exporter {
   constructor(aggregator, options = {}) {
     super(options);
     if (!aggregator) throw new Error('PrometheusExporter requires aggregator');
     this.aggregator = aggregator;
+    this._usesPromClient = !!client;
+    if (!this._usesPromClient) {
+      // prom-client not available — fallback to aggregator's promEndpoint
+      return;
+    }
+
     this.registry = options.registry || client.register;
     this.metrics = {};
-    // create metrics
+    // create metrics (Gauges reflect current snapshot)
     this.metrics.request_count = new client.Gauge({
       name: 'apm_request_count',
       help: 'Request count',
@@ -51,17 +63,12 @@ class PrometheusExporter extends Exporter {
       labelNames: ['service', 'env', 'method', 'route', 'status_class'],
       registers: [this.registry],
     });
-    // register a collect function
-    this.registry.registerMetric(this.metrics.request_count);
-    // we will update metrics on collect
-    client.collectDefaultMetrics({ register: this.registry });
-    // hook into registry collect — update our gauges before scrape
+
+    // update metrics periodically from aggregator snapshot
     const self = this;
     this._collector = async () => {
       try {
         const snap = self.aggregator.snapshot();
-        // reset metrics by removing all values then set per item
-        // prom-client gauge.set with labels overrides previous
         for (const item of snap) {
           const l = item.labels || {};
           const labels = {
@@ -84,7 +91,6 @@ class PrometheusExporter extends Exporter {
       }
     };
     this.registry.setDefaultLabels({ app: options.appName || 'apm' });
-    // prom-client v14+ supports register.registerCollector — but to be compatible, use collectDefaultMetrics and update metrics on interval
     this._interval = setInterval(() => {
       this._collector();
     }, options.collectIntervalMs || 1000);
@@ -92,11 +98,17 @@ class PrometheusExporter extends Exporter {
 
   // return an express-style handler for /metrics that uses registry.metrics()
   metricsEndpoint() {
+    if (!this._usesPromClient) {
+      // fallback: reuse aggregator's promEndpoint (text exposition) without prom-client
+      return this.aggregator.promEndpoint(null);
+    }
+
     const registry = this.registry;
+    const self = this;
     return async (_req, res) => {
       try {
         // ensure latest
-        await this._collector();
+        await self._collector();
         res.setHeader('Content-Type', registry.contentType);
         res.end(await registry.metrics());
       } catch (e) {
