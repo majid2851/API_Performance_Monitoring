@@ -7,14 +7,19 @@ describe('Webhook Exporter', function () {
   it('posts batches to configured webhook URL', async function () {
     this.timeout(5000);
     let received = null;
+    let resolveReceivedPromise;
+    const receivedPromise = new Promise(resolve => { resolveReceivedPromise = resolve; });
+
     const server = http.createServer((req, res) => {
       let body = '';
       req.on('data', (c) => (body += c));
       req.on('end', () => {
         try {
           received = JSON.parse(body);
+          resolveReceivedPromise(); // Resolve the promise when data is received
         } catch (e) {
           received = null;
+          resolveReceivedPromise();
         }
         res.writeHead(200);
         res.end('ok');
@@ -32,8 +37,8 @@ describe('Webhook Exporter', function () {
     pipeline.enqueue({ a: 1 });
     pipeline.enqueue({ a: 2 });
 
-    // wait for dispatch
-    await new Promise((r) => setTimeout(r, 500));
+    await pipeline.flush();
+    await receivedPromise; // Wait for the webhook to send data and the server to receive it
 
     await new Promise((r) => server.close(r));
     expect(received).to.be.an('object');

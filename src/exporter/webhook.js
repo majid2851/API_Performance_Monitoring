@@ -78,16 +78,7 @@ class WebhookExporter extends Exporter {
         throw err;
       }
     };
-    // concurrency: simple guard
-    while (this._inflight >= this.concurrency) {
-      await new Promise((r) => setTimeout(r, 50));
-    }
-    this._inflight++;
-    try {
-      await send();
-    } finally {
-      this._inflight = Math.max(0, this._inflight - 1);
-    }
+    await send();
   }
 }
 
