@@ -80,13 +80,7 @@ class Pipeline extends EventEmitter {
   }
 
   async _dispatchBatch(batch) {
-    if (this._dispatching) {
-      // enqueue at next tick
-      setImmediate(() => this._dispatchBatch(batch));
-      return;
-    }
-    this._dispatching = true;
-    for (const exporter of this.exporters) {
+    const promises = this.exporters.map(async (exporter) => {
       try {
         if (typeof exporter.exportBatch === 'function') {
           await exporter.exportBatch(batch);
@@ -97,8 +91,14 @@ class Pipeline extends EventEmitter {
         this.metrics.exportErrors += 1;
         this.emit('export:error', e, exporter);
       }
-    }
-    this._dispatching = false;
+    });
+    await Promise.all(promises);
+  }
+
+  async start() {
+    this.running = true;
+    // start any registered exporters that have a start method
+    await Promise.all(this.exporters.map(e => (e.start ? e.start() : Promise.resolve())));
   }
 
   async flush(timeoutMs = 5000) {
