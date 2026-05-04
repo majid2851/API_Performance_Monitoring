@@ -1,0 +1,14 @@
+node_modules/
+npm-debug.log
+.env
+.DS_Store
+coverage/
+/.idea
+/.vscode
+.nyc_output
+dist/
+build/
+examples/*.log
+/*.log
+/.cache
+temp/
