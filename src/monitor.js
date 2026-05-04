@@ -9,6 +9,8 @@ class Monitor extends EventEmitter {
     this.sampling = typeof config.sampling === 'number' ? config.sampling : 1;
     this.inFlight = 0;
     this._closed = false;
+    // optional export pipeline attached later
+    this._pipeline = null;
   }
 
   // Core Express-compatible middleware that tracks lifecycle per request.
@@ -105,6 +107,34 @@ class Monitor extends EventEmitter {
 
   close() {
     this._closed = true;
+  }
+  // Export pipeline integration
+  registerPipeline(pipeline) {
+    if (!pipeline || typeof pipeline.enqueue !== 'function') return;
+    this._pipeline = pipeline;
+    // attach to request events
+    this.on('request', (evt) => {
+      try {
+        pipeline.enqueue(evt);
+      } catch (e) {
+        // swallow
+      }
+    });
+  }
+
+  async flush(timeoutMs = 5000) {
+    if (this._pipeline && typeof this._pipeline.flush === 'function') {
+      return this._pipeline.flush(timeoutMs);
+    }
+    return Promise.resolve();
+  }
+
+  async shutdown(timeoutMs = 5000) {
+    this._closed = true;
+    if (this._pipeline && typeof this._pipeline.shutdown === 'function') {
+      return this._pipeline.shutdown(timeoutMs);
+    }
+    return Promise.resolve();
   }
 }
 
