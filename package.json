@@ -6,6 +6,10 @@
   "author": "",
   "type": "commonjs",
   "main": "src/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/majid2851/API_Performance_Monitoring.git"
+  },
   "scripts": {
     "start": "node examples/server.js",
     "dev": "node --watch examples/server.js",
