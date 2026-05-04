@@ -5,12 +5,15 @@
   "license": "ISC",
   "author": "",
   "type": "commonjs",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
+    "start": "node examples/server.js",
+    "dev": "node --watch examples/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
-    "install": "^0.13.0"
-  },
-  "devDependencies": {}
+    "express": "^5.2.1",
+    "install": "^0.13.0",
+    "nodemon": "^3.1.14"
+  }
 }
