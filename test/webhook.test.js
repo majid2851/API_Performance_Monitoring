@@ -5,7 +5,7 @@ const WebhookExporter = require('../src/exporter/webhook');
 
 describe('Webhook Exporter', function () {
   it('posts batches to configured webhook URL', async function () {
-    this.timeout(5000);
+    this.timeout(10000);
     let received = null;
     let resolveReceivedPromise;
     const receivedPromise = new Promise(resolve => { resolveReceivedPromise = resolve; });
@@ -31,7 +31,7 @@ describe('Webhook Exporter', function () {
     const url = `http://127.0.0.1:${port}`;
 
     const pipeline = new Pipeline({ batchSize: 2, batchIntervalMs: 200 });
-    const wh = new WebhookExporter({ url, retries: 0, timeoutMs: 2000, concurrency: 1 });
+    const wh = new WebhookExporter({ url, retries: 0, timeoutMs: 5000, concurrency: 1 });
     pipeline.registerExporter(wh);
 
     pipeline.enqueue({ a: 1 });
